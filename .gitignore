@@ -46,3 +46,5 @@ jest.config.js
 
 # Misc
 tmp/
+
+crusade.db
