@@ -48,3 +48,4 @@ jest.config.js
 tmp/
 
 crusade.db
+*.db
