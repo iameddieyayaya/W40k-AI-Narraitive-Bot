@@ -7,12 +7,12 @@ export interface Player {
 	faction: string;
 }
 
-interface BattleResults {
-	player: string;
-	opponent: string;
-	faction: string;
-	result: string;
-}
+export interface BattleResults { 
+	player: string; 
+	opponent: string; 
+	faction: string; 
+	result: string; 
+	week: number }
 
 interface Faction {
 	name: string;
@@ -34,6 +34,7 @@ export async function initDB() {
         player TEXT NOT NULL,
         faction TEXT NOT NULL,
         result TEXT CHECK(result IN ('win', 'loss')) NOT NULL
+				week INTEGER NOT NULL
       );
       
       CREATE TABLE IF NOT EXISTS users (
@@ -77,12 +78,26 @@ export async function addUser(player: string, faction: string): Promise<Player> 
 	}
 }
 
-export async function recordBattle(player: string, opponent: string, result: string) {
+export async function recordBattle(player: string, opponent: string, result: string, week: number) {
 	const db = await dbPromise;
 	await db.run(
-		`INSERT INTO battles (player, opponent, result) VALUES (?, ?, ?)`,
-		[player, opponent, result]
+		`INSERT INTO battles (player, opponent, result, week) VALUES (?, ?, ?, ?)`,
+		[player, opponent, result, week]
 	);
+}
+
+export async function getBattleResults(week?: number): Promise<BattleResults[]> {
+	const db = await dbPromise;
+
+	let query = `SELECT player, opponent, faction, result, week FROM battles`;
+	const params: (string | number)[] = [];
+
+	if (week) {
+		query += ` WHERE week = ?`;
+		params.push(week);
+	}
+
+	return await db.all(query, params);
 }
 
 export async function getFactionStats(): Promise<{ topWinFaction: string; topLossFaction: string }> {
@@ -109,9 +124,4 @@ export async function getAllPlayers(): Promise<Player[]> {
 export async function getFactions(): Promise<{ faction: string }[]> {
 	const db = await dbPromise;
 	return await db.all(`SELECT DISTINCT faction FROM battles`);
-}
-
-export async function getBattleResults(): Promise<{ player: string; faction: string; result: string }[]> {
-	const db = await dbPromise;
-	return await db.all(`SELECT player, faction, result FROM battles`);
 }

@@ -1,7 +1,7 @@
 import { OpenAI } from 'openai';
 import { extractPdfText } from './pdfReader';
 import * as dotenv from 'dotenv';
-import { type Player } from './database'
+import { type Player, type BattleResults } from './database'
 
 dotenv.config();
 
@@ -20,7 +20,7 @@ async function loadCrusadeData(pdfUrl: string) {
 loadCrusadeData("./wh40k10ed_pariah-nexus.pdf");
 
 
-async function generateMainCursadeStory(players: Player[], campaignDuration: number) {
+async function generateMainCursadeStory(players: Player[], campaignDuration: number, textSuggestion?: string) {
   const prompt = `
     You are the narrator for a Warhammer 40k Pariah Nexus Crusade campaign. The war is growing fiercer with every passing day, and the three primary factions are at each other’s throats, each with their own ambitions, goals, and strategies. The **Imperium**, **Xenos**, and **Chaos** factions are locked in a deadly struggle, but the lines between them are not always as clear-cut as they seem. 
 
@@ -37,6 +37,8 @@ async function generateMainCursadeStory(players: Player[], campaignDuration: num
     - **Campaign Duration**: ${campaignDuration} weeks
     - **Players and Factions**:
       ${players.map(player => `${player.name} (Faction: ${player.faction})`).join("\n")}
+
+    - **Text Suggestion**: ${textSuggestion}
 
     ### Your Narrative Should Include:
     1. **The Stakes**: What is each faction fighting for? Is it survival, dominance, or the power of the **Pariah Nexus** itself? What is at risk if they fail?
@@ -69,21 +71,26 @@ async function generateMainCursadeStory(players: Player[], campaignDuration: num
   }
 }
 
-async function progressNarrative(players: Player[], campaignDuration: number) {
+async function progressNarrative(players: Player[], campaignDuration: number, battleResults: BattleResults[]) {
   const prompt = `
     You are continuing the narrative for the Warhammer 40k Pariah Nexus Crusade campaign. The crusade has progressed, and the war has grown even more intense as the factions push towards their ultimate goals. With each passing week, the stakes have increased, the alliances have fractured, and new forces have emerged. The crusade is divided into three main factions: 
 
     1. **Imperium**: The defenders of humanity, driven by faith, loyalty, and desperate survival in the face of overwhelming odds.
+      - Includes: Adeptus Astartes, Astra Militarum, Adeptus Mechanicus, and other factions of the Imperium.
     2. **Xenos**: Alien races with their own motivations, seeking to dominate, eradicate, or subjugate the galaxy.
+      - Includes: Aeldari, Tyranids, Necrons, and other Xenos factions.
     3. **Chaos**: The forces of the Dark Gods, driven by corruption, madness, and a hunger to undo the very fabric of existence.
+      - Includes: Chaos Space Marines, Daemons, and other factions of the Chaos.
 
     While these three categories define the broad strokes of the conflict, the factions within them are constantly shifting and at times may even come into direct conflict with each other. The lines are not so simple, and the motivations of each faction can lead to unexpected clashes.
 
     Based on the following details, expand and evolve the story of the crusade. This new chapter reflects the aftermath of recent battles, the changing motivations of each faction, and the growing threats of the Pariah Nexus.
 
-    - **Campaign Duration**: ${campaignDuration} weeks
+    - **Campaign Duration**: The length of the campaign is ${campaignDuration} weeks.
     - **Players and Factions**:
       ${players.map(player => `${player.name} (Faction: ${player.faction})`).join("\n")}
+    - **Battle Results**:
+      ${battleResults.map(result => `${result.player} vs. ${result.opponent} - Result: ${result.result}`).join("\n")}
 
     ### Story Progression:
 
@@ -108,12 +115,13 @@ async function progressNarrative(players: Player[], campaignDuration: number) {
       - The factions can feel it—the endgame is approaching, and everyone is scrambling to gain the advantage. The forces of **Chaos** are pushing harder to break the will of the **Imperium**, while the **Xenos** plot their next move, seeking to exploit the chaos. The **Tyranids** are on the verge of consuming all, their Hive Mind shifting ever closer to a terrifying new evolution.
 
     6. **An Epic Conclusion**:
+      - When campaign duration reaches its end, the final battle will be upon us. The players must face their ultimate challenge, their destinies intertwined with the fate of the galaxy. The **Pariah Nexus** will reveal its darkest secrets, and the victors will shape the future of the 41st millennium.
       - What happens now could reshape the future of the **Pariah Nexus** and the galaxy at large. The players must confront their fate, their alliances, and their deepest fears. Will they emerge victorious or be consumed by the endless war that defines the grimdark future of the 41st millennium?
 
     Provide a new narrative that continues the story, focusing on how the factions are responding to these new developments. Reflect on the changes in the landscape, the motivations of the players, and the escalating tensions as the crusade draws toward its final, decisive battles.
 
     Your response should include:
-    1. **Recommended Match Pairings for the Next Week**: This will set the stage for an explosive showdown, with alliances shifting and new rivalries emerging.
+    1. **Recommended Match Pairings for the Next Week; They will most likely be random**: This will set the stage for an explosive showdown, with alliances shifting and new rivalries emerging.
     2. **The Outcome of the Most Recent Games**: A twist or shift in the factions' fortunes could alter everything, leading to a new balance of power.
     3. **An Evolving Narrative**: The story should reflect the chaos and shifting allegiances of the campaign, escalating the stakes as the final battles approach.
     4. **Epic Encounters or Revelations**: Major events that could change the course of the war, such as the emergence of a hidden faction, an ancient artifact's discovery, or a betrayal that shatters alliances.
@@ -140,4 +148,13 @@ async function progressNarrative(players: Player[], campaignDuration: number) {
   }
 }
 
-export { generateMainCursadeStory, progressNarrative };
+async function resetNarrative() {
+  await openai.chat.completions.create({
+    model: "gpt-4",
+    messages: [
+      { role: 'system', content: 'You are a helpful narrator for a Warhammer 40k campaign. The previous narrative is now erased. Start fresh with a new story.' }
+    ]
+  });
+}
+
+export { generateMainCursadeStory, progressNarrative, resetNarrative };

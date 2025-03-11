@@ -38,6 +38,18 @@ export const commands = [
 
 	new SlashCommandBuilder()
 		.setName(commandNames.generate_main_crusade_story)
-		.setDescription('Generates a narrative for battle')
+		.setDescription('Setups the main crusade story')
+		.addIntegerOption(option =>
+			option.setName('weeks')
+				.setDescription('Number of weeks to generate')
+				.setRequired(true)),
+
+	new SlashCommandBuilder()
+		.setName(commandNames.progress_narrative)
+		.setDescription('Progress the narrative')
+		.addIntegerOption(option =>
+			option.setName('weeks')
+				.setDescription('Number of weeks to remaining in the crusade')
+				.setRequired(true))
 
 ].map(command => command.toJSON());
